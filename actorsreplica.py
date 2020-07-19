@@ -7,7 +7,7 @@ class ActorsReplica(SpriteAdv):
     vertAlign = 1 #вертикальный отступ - множитель высоты шрифта
     horAlign = 1 #горизонтальный отступ - множитель ширины шрифта
 
-    def __init__(self,screen, prompt, startPos, nameOfSkin = 'chat_bubble_sq_mid.png'):
+    def __init__(self,screen, prompt, startPos, nameOfSkin = 'chat_bubble_small_gray.png'):
         SpriteAdv.__init__(self,screen, nameOfSkin)        
         self.screen = screen
         self.prompt = prompt

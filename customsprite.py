@@ -18,13 +18,18 @@ class SpriteAdv(pygame.sprite.Sprite):
     def loadSound(self,name):
         return AppEnv.loadSound(name)
 
+    #устанавливает, каким углом 
+    def setScale(self, dimension):
+        self.image = pygame.transform.scale(self.image, dimension)
+        self.rect = self.image.get_rect()
+        
     #choose one skin from loaded files, parameter skin is number of
     #file from list. If once the one is getting, if more - it's getting by No
-    #if No greater then total - it's getting last one, if less then 0 - rendom
+    #if No greater then total - it's getting last one, if less then 0 - random
     #None (default, i.e parameter absent) - first one
     def setSkin(self, skin = None, transparency = None):
         if len(self.skins) == 0:
-            font = pygame.font.Font(None, 36)            
+            font = pygame.font.Font("Serif", 36)            
             title = font.render(self.answer, 1, (10, 10, 10))
             self.image = title
         elif len(self.skins) == 1:
@@ -41,12 +46,20 @@ class SpriteAdv(pygame.sprite.Sprite):
             else:
                 self.imageNum = random.randrange(0,len(self.images)-1)
                 self.image = self.images[self.imageNum]
+            self.setTransparency(transparency)
+            
+    def setTransparency(self, transparency):
+        self.transparency = transparency
         if not transparency == None:
             if (transparency < 0):
                 transparency = 0
             if (transparency > 255):
                 transparency = 255
             self.image.set_alpha(transparency)
+    
+    def setAppearance(self, seconds, transparency):
+        self.appearance = True
+        self.transparency = 255
             
     def _parseSkins(self, src):
         if not src.find(":") != -1:
@@ -62,9 +75,9 @@ class SpriteAdv(pygame.sprite.Sprite):
         s = ""  
         for letter in lst:  
             s += letter
-        return s
+        return s        
 
-    def __init__(self, screen, skinsFileNames):
+    def __init__(self, screen, skinsFileNames, transparency = None):
         pygame.sprite.Sprite.__init__(self)
         self.cfg = cfg
         skinsFileNames = self._parseSkins(skinsFileNames) 
@@ -75,3 +88,6 @@ class SpriteAdv(pygame.sprite.Sprite):
         self.screen = screen
         self.rect = self.image.get_rect()         
         self.rect.bottomright = self.screen.get_rect().bottomright
+        self.appearance = False
+        self.transparency = transparency
+        self.setTransparency(transparency)

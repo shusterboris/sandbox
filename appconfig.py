@@ -206,7 +206,7 @@ class FontView(pygame.font.Font):
         self.colorFail = (230, 230, 230)
         self.colorUi = self.color
         self.RLE = False 
-        self.font = pygame.font.SysFont(None, self.size)
+        self.font = pygame.font.SysFont("Serif", self.size)
         
     def loadFont(self, dataDir):
         self.font = self.getFont(dataDir)
@@ -215,7 +215,7 @@ class FontView(pygame.font.Font):
         intValue = readIntKeyValue("Fonts", self.label + " size")
         if intValue:
             self.size = intValue
-        defaultFont = pygame.font.SysFont(None, self.size)
+        defaultFont = pygame.font.SysFont("Serif", self.size)
         strValue = readStrKeyValue('Fonts',self.label)
         if not strValue:
             return defaultFont
@@ -227,16 +227,16 @@ class FontView(pygame.font.Font):
         font_path = os.path.join(dataDir, "fonts")
         font_path = os.path.join(font_path, strValue)
         if not (os.path.isfile(font_path)):
-            print("Неправильный маршрут или имя файла шрифта%s"%font_path)
+            print("Неправильный маршрут или имя файла шрифта %s"%font_path)
             return defaultFont
         if not (os.path.exists(font_path)):
-            print("Файл шрифта не существует (%s)"%font_path)
+            print("Файл шрифта не существует (%s) "%font_path)
             return defaultFont
         try:
             font = pygame.font.Font(font_path, self.size)
             return font
         except:
-            print("Ошибка при загрузке шрифта (%s)"%strValue)
+            print("Ошибка при загрузке шрифта (%s) "%strValue)
             return defaultFont
 
 

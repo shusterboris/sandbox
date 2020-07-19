@@ -7,7 +7,9 @@ from customsprite import SpriteAdv
 from flyer import Flyer
 from answers import Answer
 from questbubble import WordQuestion
-from servicemessage import ServiceMessage
+from msgmulti import ResultMessage
+from servicebuttons import SoundBtn
+from imagetip import ImageTip
 import dictionaries
 
 
@@ -39,7 +41,7 @@ class Actor(SpriteAdv):
     def update(self):
         self.rect.bottomleft = self.startPos
         
-    def createQuestion(self):
+    def createQuestion(self, deepOfRecursion = 0):
         word = self.dic.getRandomWord()
         question = self.dic.createWordQuestion(word)
         #проверяем, а нет ли в существующих
@@ -51,13 +53,16 @@ class Actor(SpriteAdv):
         elif existing.state < 0:
             self.answered[key] = question
         else:
-            return self.createQuestion()
+            if (deepOfRecursion < 5):
+                deepOfRecursion += 1
+                return self.createQuestion(deepOfRecursion)
         return question
         
     def cast(self):
         #Колдуем: бросаем кучу шариков, если он уже закончил предыдущий цикл бросания флаеров и ожидания ответа
         if (self.state != ActorsStatus.Ready):
             return
+        self.state = ActorsStatus.CastingFlyers
         i = 1
         flyers = []
         skins = 'Flyer:ball-a.png,ball-b.png,ball-c.png,ball-d.png,ball-e.png'        
@@ -75,7 +80,6 @@ class Actor(SpriteAdv):
             i = i + 1
             Config.allsprites.add(flyer)
             
-        self.state = ActorsStatus.CastingFlyers
         return flyers
 
     def castAnswers(self):
@@ -93,6 +97,10 @@ class Actor(SpriteAdv):
         self.question = self.createQuestion()
         quest = WordQuestion(self.screen, self.question.word, self.rect.midtop)
         Config.answers.add(quest)
+        # проверим звуки
+        if self.question.soundPath:
+            buttonSpr = SoundBtn(self.screen, "2notes.png", self.question.soundPath)
+            Config.answers.add(buttonSpr)
         # потом ответы
         i = 1
         for translate in self.question.answers:
@@ -106,7 +114,6 @@ class Actor(SpriteAdv):
         spriteAnswer = self.onAnswerClicked(mousePos)
         if spriteAnswer == None: 
             return
-        self.state = ActorsStatus.Ready        
         key = self.question.word
         translate = spriteAnswer.answer
         if translate == self.question.trnslt:
@@ -119,6 +126,7 @@ class Actor(SpriteAdv):
                 self.answered[key].state = self.question.state 
                 self.successed, self.failed = self.question.changeState(True, self.successed, self.failed)
             self.showResult(self.question.state == 1)
+            self.state = ActorsStatus.Ready      
         else:
             #ответ неправильный, изменяем вид надписи...
             spriteAnswer.showAnswerBad()
@@ -127,20 +135,45 @@ class Actor(SpriteAdv):
             self.successed, self.failed = self.question.changeState(False, self.successed, self.failed)            
         self.result.changeState(self.successed, self.failed)  
     
-    def onAnswerClicked(self, mousePos):
+    def showImageTip(self):
+        if (self.question.imgPath):
+            imageTip = ImageTip(self.screen, self.question.imgPath, (0, 0), 10)
+            imageTip.setAppearance(5, 255)
+            imageTip.rect.topleft = self.screen.get_rect().topleft
+            Config.answers.add(imageTip)
+            Config.allsprites.add(imageTip)
+    
+    def onAnswerClicked(self, mousePos, group = Config.answers):
         pointer = MousePointer(mousePos)
-        spriteAnswer = pygame.sprite.spritecollideany(pointer, Config.answers)
+        spriteAnswer = pygame.sprite.spritecollideany(pointer, group)
         className = type(spriteAnswer).__name__
-        if not className == "Answer":
+        if className == "Answer":
+            return spriteAnswer
+        elif className == "NoneType":
+            if (group != Config.allsprites):
+                self.onAnswerClicked(mousePos, Config.allsprites)
+            return 
+        elif className == "MsgMulti":
+            spriteAnswer.kill()
+            return 
+        elif className == "SoundBtn":
+            #TODO сделать звук, здесь же как в Скрече - графические кнопки: загрузить звук,  рисунок, записать звук
+            AppEnv.loadCustomSound(spriteAnswer.soundPath).play()
             return None
-        return spriteAnswer
+        elif className == "Actor":
+            if self.state == ActorsStatus.WaitingForAnswer:
+                self.showImageTip()
+            return None
+        else:
+            return None
+        
         
     def questionAccepted(self):
         Config.allsprites.remove(Config.answers.sprites())
         Config.answers.empty()
     
     def showResult(self, isSuccess=True):
-        text = "<Пробел>-продолжение,<ESC> - выход"
+        text = "Клавиша <Пробел> - продолжение, <ESC> - выход"
         if (isSuccess):
             self.showMessage("ПРАВИЛЬНО! "+text, None)
         else:
@@ -150,8 +183,8 @@ class Actor(SpriteAdv):
         if (self.msg != None):
             Config.allsprites.remove(self.msg)
         if pos == None:
-            pos = pos = self.rect.topright
-        self.msg = ServiceMessage(self.screen, text, pos)
+            pos = self.rect.topright
+        self.msg = ResultMessage(self.screen, text, pos, "chat_bubble_medium_gray.png")
         Config.allsprites.add(self.msg)
         Config.allsprites.update()
         

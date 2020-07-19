@@ -9,7 +9,7 @@ class WordQuestion(ActorsReplica):
     horAlign = 1 #горизонтальный отступ - множитель ширины шрифта
 
     def __init__(self,screen, prompt, startPos):
-        ActorsReplica.__init__(self,screen,startPos,'chat_bubble_sq_mid.png')        
+        ActorsReplica.__init__(self,screen,startPos,'chat_bubble_small_gray.png')        
         self.screen = screen
         self.prompt = prompt
         self.startPos = startPos

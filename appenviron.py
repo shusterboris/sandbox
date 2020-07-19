@@ -21,10 +21,21 @@ class AppEnv:
         return os.environ['USERPROFILE']
     
     @staticmethod
+    def getDictImageDir():
+        return os.path.join(AppEnv.getDictDir(),"images")
+    
+    @staticmethod
     def loadImage(fileName, colorkey=None):
         fullname = os.path.join(AppEnv.getDataDir(), fileName)
         try:
-            image = pygame.image.load(fullname)
+            if (os.path.exists(fullname)):
+                image = pygame.image.load(fullname)
+            else:
+                fullname = os.path.join(AppEnv.getDictImageDir(),fileName)
+                if os.path.exists(fullname): 
+                    image = pygame.image.load(fullname)
+                else:
+                    raise pygame.error
         except pygame.error:
             print ('Невозможно загрузить изображение:', fullname, ", ",str(geterror()))
             return None
@@ -49,6 +60,22 @@ class AppEnv:
         except pygame.error:
             print ('Невозможно загрузить звук: %s' % fullname)
         return sound
+
+    @staticmethod
+    def loadCustomSound(name):
+        class NoneSound:
+            def play(self): pass
+        if not pygame.mixer or not pygame.mixer.get_init():
+            pygame.mixer.init()
+        if not pygame.mixer or not pygame.mixer.get_init():            
+            return NoneSound()
+        fullname = os.path.join(os.path.join(AppEnv.getDictDir(), "sounds"), name)
+        try:
+            sound = pygame.mixer.Sound(fullname)
+        except pygame.error:
+            print ('Невозможно загрузить звук: %s' % fullname)
+        return sound
+
     
     @staticmethod
     def loadIcon(fileName):

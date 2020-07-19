@@ -5,7 +5,7 @@ from actorsreplica import ActorsReplica
 class ServiceMessage(ActorsReplica):
 
     def __init__(self,screen, prompt, startPos):
-        ActorsReplica.__init__(self,screen, prompt, startPos, 'chat_bubble_sq_mid.png')
+        ActorsReplica.__init__(self,screen, prompt, startPos, 'chat_bubble_sq_navi.png')
         self.prompt = prompt
         self.startPos = startPos               
         self.showMessage()

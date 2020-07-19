@@ -8,8 +8,6 @@ class Dictionaries:
     def __init__(self):
         self.words = []       
         self.cfg = appconfig.cfg
-        userProfile = os.path.join(AppEnv.getUserProfile(),"Documents")
-        self.userDictFileName = os.path.join(userProfile, self.cfg.dictFileName).encode(encoding = 'UTF-8')
         self.dictFileName = os.path.join(AppEnv.getDictDir(), self.cfg.dictFileName)
         self.defDictFileName = os.path.join(AppEnv.getDictDir(), self.cfg.dictDefaultFileName)
     
@@ -22,7 +20,8 @@ class Dictionaries:
     #разбирает строку справочника.Возвращает кортеж WordRecord и код ошибки
     def fetchLine(self, rec):
         #в файле в каждой строке: слово, перевод, транскрипция, мэм-ассоциация 
-        #для улчшения запоминания и маршрут к графическому файлу с изображением
+        #для улучшения запоминания, имя графического файла с изображением
+        #имя файла со звуком
         #разделены точкой с запятой. два первых обязательные, остальные - нет
                 
         rec = rec.strip()
@@ -40,6 +39,8 @@ class Dictionaries:
             return WordRecord(parts[0],parts[1], parts[2], parts[3]), ''
         elif len(parts) == 5:
             return WordRecord(parts[0],parts[1], parts[2], parts[3], parts[4]), ''
+        elif len(parts) == 6:
+            return WordRecord(parts[0],parts[1], parts[2], parts[3], parts[4], parts[5]), ''
         else:
             #строка содержит больше слов, разделенных ";" чем положено - ошибка
             return None, 'Слишком много частей в строке словаря'
@@ -48,7 +49,7 @@ class Dictionaries:
     def loadDictFromFile(self,fullName):
         #dictionary presets: does it use RLE alphabets and direction of translation
         if not os.path.isfile(fullName):
-            print("Неправильное имя файла: "+fullName.decode("utf8"))
+            print("Неправильное имя файла: "+fullName)
             return False
         elif not os.path.exists(fullName):
             print("Не существует файла с именем: "+fullName)
@@ -86,11 +87,7 @@ class Dictionaries:
             return result
         
     def loadDict(self):
-        if self.loadDictFromFile(self.userDictFileName):
-            pass
-        elif self.loadDictFromFile(self.dictFileName):
-            pass
-        elif self.loadDictFromFile(self.defDictFileName):
+        if self.loadDictFromFile(self.defDictFileName):
             pass
         else:
             print("Не удалось прочитать ни один словарь указанный в настройках")
@@ -109,7 +106,7 @@ class Dictionaries:
 class WordRecord:
     #настройки: прямой порядок слово-перевод, слово справа налево, перевод справа налево
     settings = {False, False, False}
-    def __init__(self, word, trnslt, trnscr='', mem='', imgPath=''):
+    def __init__(self, word, trnslt, trnscr='', mem='', imgPath='', soundPath=''):
         #trnslt = self._wordReverse(trnslt)
         self.word = word
         self.trnslt = trnslt
@@ -117,6 +114,7 @@ class WordRecord:
         self.mem = mem
         self.imgPath = imgPath
         self.label = trnslt
+        self.soundPath = soundPath
     
     def __repr__(self):
         result = "WordRecord [word]="+self.word+", [translate]="+self.trnslt
@@ -139,17 +137,17 @@ class WordRecord:
     def getTranslationView(self):
         return self.trnslt
     
-    
-    
-    
+#состояние выученности слова    
 class WordLearningStatus(Enum):
     New = 0
     NeverAsk = 10000 
 
+#очередной вопрос: слово и варианты ответов
 class WordQuestion(WordRecord):
+    
     def __init__(self, wordRec, dictionary):
         #TODO хорошо бы сделать уменьшение статуса с течением времени
-        WordRecord.__init__(self, wordRec.word, wordRec.trnslt, wordRec.trnscr, wordRec.mem, wordRec.imgPath)
+        WordRecord.__init__(self, wordRec.word, wordRec.trnslt, wordRec.trnscr, wordRec.mem, wordRec.imgPath, wordRec.soundPath)
         #статус выученности: 0 - новый, каждый верный ответ увеличивает статус на 1, неверный уменьшает
         #TODO пока не вычисляется
         self.learningState = 0;
@@ -166,6 +164,16 @@ class WordQuestion(WordRecord):
         result = "WordQuestion: [state]="+str(self.state)+ " ,[word] = " + self.word
         result += ", [translate] = " + self.trnslt + ", " + str(self.answers) 
         return result
+    
+    def _loadSound(self):
+        if WordRecord.sound:
+            return None
+        return AppEnv.loadSound(self.soundPath)
+    
+    def _loadImageTip(self):
+        if not self.imgPath:
+            return None
+        return AppEnv.loadImage(self.imgPath, -1)
     
     def changeState(self, isSuccess, successed, failed):
         #только если успешный ответ получен в первой попытке, увеличиваем счетчик успешных и присваиваем стаус "успешно"

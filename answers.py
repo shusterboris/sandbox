@@ -1,9 +1,10 @@
 #coding=utf8
 import random
 import pygame
-from appconfig import cfg
+from appconfig import cfg, Config
 from appenviron import AppEnv
 from spritetext import SpriteText
+from msgmulti import ResultMessage
 
 class Answer(SpriteText):
     answer = ""
@@ -20,6 +21,7 @@ class Answer(SpriteText):
         self.endPos = (-1, -1)
         self.order = order
         self.badSound = None
+        self.mistakeSprite = None
        
     
     def playSoundError(self):
@@ -36,7 +38,11 @@ class Answer(SpriteText):
         
     def showAnswerBad(self):
         self.showText(self.answer, self.font, cfg.getPaletteByType("Bad answer"))
-        self.playSoundError()        
+        self.playSoundError()   
+        if not Config.answers.has(self.mistakeSprite):
+            self.mistakeSprite = ResultMessage(self.screen, "Неправильно. Выберите другой вариант", (200,200),"chat_bubble_medium_gray.png")
+            Config.answers.add(self.mistakeSprite)
+            Config.allsprites.add(self.mistakeSprite)
 
     def processErrorAnswer(self):
         #self.image = pygame.transform.flip(self.image, True, True)
