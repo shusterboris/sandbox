@@ -2,6 +2,7 @@
 import os, sys
 import configparser
 import pygame
+import logging
 
 from appenviron import AppEnv
 
@@ -12,8 +13,8 @@ def readStrKeyValue(sectName,keyName):
     key = None
     try:
         key = parser[sectName][keyName]
-    except KeyError as err:
-        print("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,err))
+    except:
+        Config.appLog.warning("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,str(sys.exc_info())))
     return key
 
 def readIntKeyValue(sectName,keyName):
@@ -22,7 +23,7 @@ def readIntKeyValue(sectName,keyName):
         keyStr = readStrKeyValue(sectName,keyName)
         key = int(keyStr)
     except:
-        print("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,sys.exc_info()[0]))
+        Config.appLog.warning("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,str(sys.exc_info())))
     return key
             
 #should return position as (x,y) from string with format nnn,nnn
@@ -40,7 +41,7 @@ def readPosKeyValue(sectName,keyName):
             Exception("как минимум, одно из значений не является числом")
         key = (int(x), int(y))
     except:
-        print("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,sys.exc_info()[0]))
+        Config.appLog.warning("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,str(sys.exc_info())))
     return key
 
 #should return position as (x,y) from string with format nnn,nnn
@@ -59,7 +60,7 @@ def readRGBKeyValue(sectName,keyName):
             Exception("как минимум, одно из значений не является числом")
         key = (int(r), int(g), int(b))
     except:
-        print("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,sys.exc_info()[0]))
+        Config.appLog.warning("Ошибка при чтении ключа{1} ini-файла: {0}".format(keyName,str(sys.exc_info())))
     return key
 
 
@@ -87,10 +88,13 @@ class Config:
         
     def __init__(self):
         try:
+            logger.info("Инициализация настроек")
             mainDir = AppEnv.getMainDir()
+            logger.info("Главная папка: "+mainDir)
             iniFile = os.path.join(mainDir,"app.ini")
             parser.read(iniFile, encoding='utf-8')
             value = readPosKeyValue('Settings','Screen resolution')
+            logger.info("Считывание разрешения экрана")
             if value:
                 self.screenResolution = value
             intValue = readIntKeyValue('Settings','FPS')
@@ -134,7 +138,7 @@ class Config:
             if (not self.fontSettings.loadingStatus):
                 Exception("Не загружены один или более шрифтов")            
         except:
-            print("Работа невозможна из-за ошибок в настройках: %s"%str(sys.exc_info()))
+            logger.fatal("Работа невозможна из-за ошибок в настройках: %s"%str(sys.exc_info()))
 
     def _loadPlainBackground(self, screen):
         background = pygame.Surface(screen.get_size())
@@ -160,7 +164,7 @@ class Config:
             else:
                 return self._loadPlainBackground(screen)
         except:
-            print("Ошибка {} при загрузке фона {}".format(bckgrFileName, sys.exc_info()[0]))
+            Config.appLog.warning("Ошибка {} при загрузке фона {}".format(bckgrFileName, str(sys.exc_info())))
             return self._loadPlainBackground(screen)
         
     def getFontByType(self, fontType):
@@ -296,7 +300,24 @@ class FontSettings:
         self.palette.update({"Answer" : (10, 10, 10)})
         self.palette.update({"Bad answer" : (230, 230, 230)})
         self.palette.update({"Interface" : (10, 10, 10)})
-
-
+    
+def setupLogger():    
+    # create logger
+    logger = logging.getLogger('wordscaster')
+    logger.setLevel(logging.INFO)    
+    # create file handler and set level to info
+    logFileName = os.path.join(AppEnv.getMainDir(),'wordscaster.log')
+    ch = logging.FileHandler(logFileName)
+    ch.setLevel(level = logging.INFO)
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(ch)
+    return logger
+    
 global cfg 
+global logger 
+logger = setupLogger()
 cfg = Config()

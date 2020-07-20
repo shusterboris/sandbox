@@ -24,8 +24,7 @@ class Actor(SpriteAdv):
         SpriteAdv.__init__(self,screen,"Actor:wizard-a.png")
         self.state = ActorsStatus.Ready 
         self.screen = screen
-        self.dic = dictionaries.Dictionaries()
-        self.dic.loadDict()
+        self.dic = dictionaries.Dictionaries()        
         self.answered = {}
         self.successed = 0
         self.failed = 0
@@ -35,8 +34,9 @@ class Actor(SpriteAdv):
         self.startPos = (x, y)
         color = self.cfg.fontSettings.palette.get("Interface")
         fontView = self.cfg.getFontByType("Interface font")
-        self.result = ResultStr(fontView.font, color, self.screen.get_rect().midbottom)        
-        #Config.allsprites.add(WordQuestion(screen,"press any key",self.screen.get_rect().midtop))
+        self.result = ResultStr(fontView.font, color, self.screen.get_rect().midbottom)
+        self.status = self.dic.loadDict()        
+        
         
     def update(self):
         self.rect.bottomleft = self.startPos
@@ -119,7 +119,9 @@ class Actor(SpriteAdv):
         if translate == self.question.trnslt:
             #если ответ на котором щелкнули, правильный (соответствует переводу)
             if (cfg.sounds):
-                AppEnv.loadSound(cfg.sounds[0]).play()
+                soundGood = AppEnv.loadSound(cfg.sounds[0])
+                if soundGood:
+                    soundGood.play()
             self.questionAccepted()
             if self.question.state == 0:
                 #если статус вопроса "новый" - т.е. до этого не было неправильных ответов, увеличим счетчик успешных
@@ -158,7 +160,8 @@ class Actor(SpriteAdv):
             return 
         elif className == "SoundBtn":
             #TODO сделать звук, здесь же как в Скрече - графические кнопки: загрузить звук,  рисунок, записать звук
-            AppEnv.loadCustomSound(spriteAnswer.soundPath).play()
+            if AppEnv.loadCustomSound(spriteAnswer.soundPath).play() == None:
+                Config.appLog.warning("Невозможно загрузить звуковую подсказку "+spriteAnswer.soundPath)
             return None
         elif className == "Actor":
             if self.state == ActorsStatus.WaitingForAnswer:

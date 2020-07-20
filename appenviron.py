@@ -1,12 +1,17 @@
 #coding=utf8
-import os
+import os, sys
 import pygame
-from pygame.compat import geterror
 
 class AppEnv:
+    soundsDir = ""
+    imagesDir = ""
+    
     @staticmethod
     def getMainDir():
-        return os.path.split(os.path.abspath(__file__))[0]
+        if hasattr(sys, '_MEIPASS' ):
+            return os.path.dirname(sys.executable)
+        else:
+            return os.path.split(os.path.abspath(__file__))[0]
 
     @staticmethod
     def getDataDir():
@@ -22,7 +27,18 @@ class AppEnv:
     
     @staticmethod
     def getDictImageDir():
-        return os.path.join(AppEnv.getDictDir(),"images")
+        if AppEnv.imagesDir == "":
+            return os.path.join(AppEnv.getDictDir(),"images")
+        else:
+            return AppEnv.imagesDir
+
+    @staticmethod
+    def getDictSoundDir():
+        if AppEnv.soundsDir == "":
+            return os.path.join(AppEnv.getDictDir(),"sounds")
+        else:
+            return AppEnv.soundsDir
+
     
     @staticmethod
     def loadImage(fileName, colorkey=None):
@@ -37,7 +53,6 @@ class AppEnv:
                 else:
                     raise pygame.error
         except pygame.error:
-            print ('Невозможно загрузить изображение:', fullname, ", ",str(geterror()))
             return None
         image = image.convert()
         if colorkey is not None:
@@ -58,7 +73,7 @@ class AppEnv:
         try:
             sound = pygame.mixer.Sound(fullname)
         except pygame.error:
-            print ('Невозможно загрузить звук: %s' % fullname)
+            return None
         return sound
 
     @staticmethod
@@ -69,11 +84,11 @@ class AppEnv:
             pygame.mixer.init()
         if not pygame.mixer or not pygame.mixer.get_init():            
             return NoneSound()
-        fullname = os.path.join(os.path.join(AppEnv.getDictDir(), "sounds"), name)
+        fullname = os.path.join(AppEnv.getDictSoundDir(), name)
         try:
             sound = pygame.mixer.Sound(fullname)
         except pygame.error:
-            print ('Невозможно загрузить звук: %s' % fullname)
+            return None
         return sound
 
     

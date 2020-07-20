@@ -2,12 +2,12 @@
 import os, sys, random
 from enum import Enum
 from appenviron import AppEnv
-import appconfig
+from appconfig import Config, cfg
 
 class Dictionaries:
     def __init__(self):
         self.words = []       
-        self.cfg = appconfig.cfg
+        self.cfg = cfg
         self.dictFileName = os.path.join(AppEnv.getDictDir(), self.cfg.dictFileName)
         self.defDictFileName = os.path.join(AppEnv.getDictDir(), self.cfg.dictDefaultFileName)
     
@@ -49,11 +49,9 @@ class Dictionaries:
     def loadDictFromFile(self,fullName):
         #dictionary presets: does it use RLE alphabets and direction of translation
         if not os.path.isfile(fullName):
-            print("Неправильное имя файла: "+fullName)
-            return False
+            return "Неправильное имя файла: "+fullName
         elif not os.path.exists(fullName):
-            print("Не существует файла с именем: "+fullName)
-            return False
+            return "Не существует файла с именем: "+fullName
             
         try:
             result = True
@@ -75,24 +73,50 @@ class Dictionaries:
                     if (i == 0 and error == 'Неверная строка в словаре'):
                         self.name = line;
                 i =+ 1
+            if (len(self.words) != 0):
+                return ""
+            else:
+                return "Cловарь %s указанный в настройках пустой или неправильно заполнен"%self.dictFileName 
         except OSError as err:
-            print("Ошибка при работе с файлом: {0}".format(err))
-            result = False
+            return "Ошибка при работе с файлом: {0}".format(err)
         except:
-            print("Ошибка:", sys.exc_info()[0])
-            result = False
+            return "Ошибка:", sys.exc_info()[0]
         else:
             f.close()
-        finally:
-            return result
-        
+
+    #для каждого словаря создает подпаки длях ранения звуковых и графических файлов
+    def _checkOrCreateDictionarySubfolders(self, dictName):
+        nameWithoutExt = os.path.splitext(dictName)
+        pureName = os.path.split(nameWithoutExt[0])
+        folderName = os.path.join(AppEnv.getDictDir(), pureName[1])
+        try:
+            if not (os.path.exists(folderName) and os.path.isdir(folderName)):
+                os.mkdir(folderName) 
+            soundsFolder = os.path.join(folderName, "sounds")
+            if not (os.path.exists(soundsFolder) and os.path.isdir(soundsFolder)):
+                os.mkdir(soundsFolder) 
+            imagesFolder = os.path.join(folderName, "images")
+            if not (os.path.exists(imagesFolder) and os.path.isdir(imagesFolder)):
+                os.mkdir(imagesFolder) 
+            AppEnv.soundsDir = soundsFolder
+            AppEnv.imagesDir = imagesFolder
+        except:
+            AppEnv.soundsDir = ""
+            AppEnv.imagesDir = ""
+            Config.appLog.warning("Невозможно создать папку для пользовательского словаря. "+str(sys.exc_info()))
+            
     def loadDict(self):
-        if self.loadDictFromFile(self.defDictFileName):
-            pass
+        result = self.loadDictFromFile(self.dictFileName)
+        if result == "":
+            self._checkOrCreateDictionarySubfolders(self.dictFileName)
+            return "";
+        result = self.loadDictFromFile(self.defDictFileName) 
+        if result == "":
+            self._checkOrCreateDictionarySubfolders(self.defDictFileName)
+            return ""
         else:
-            print("Не удалось прочитать ни один словарь указанный в настройках")
-        if len(self.words) == 0:
-            print("Cловарь %s указанный в настройках пустой или неправильно заполнен"%self.dictFileName)      
+            return "Не удалось прочитать ни один словарь указанный в настройках"
+                  
     
     def getRandomWord(self):
         ind = random.randint(0, len(self.words) - 1)
